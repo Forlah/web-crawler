@@ -31,18 +31,6 @@ func (h *Handler) startCrawling(url string, depth int) {
 		return
 	}
 
-	// write initial url content to file
-	if depth == 0 {
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := h.downloaderClient.WriteContent(h.destinationDirectory, data); err != nil {
-			fmt.Printf("%v", err)
-			return
-		}
-	}
-
 	links := h.crawler.ReadLink(resp.Body)
 	log.Println("Links = ", len(links))
 	validLinks := h.crawler.FilterLinks(links)
@@ -56,5 +44,22 @@ func (h *Handler) startCrawling(url string, depth int) {
 }
 
 func (h *Handler) WebCrawler() {
+	resp, err := h.downloaderClient.DownloadURL(h.initialURL)
+	if err != nil {
+		fmt.Printf("downloading initial url, Error: %v", err)
+		return
+	}
+
+	// write initial url content to file
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := h.downloaderClient.WriteContent(h.destinationDirectory, data); err != nil {
+		fmt.Printf("%v", err)
+		return
+	}
+
+	// recursively crawl webpage
 	h.startCrawling(h.initialURL, 0)
 }

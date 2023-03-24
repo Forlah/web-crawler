@@ -40,9 +40,6 @@ func (c crawler) makeLink(tag html.Token, text string) model.Link {
 }
 
 func (c crawler) Valid(link model.Link) bool {
-	if link.Depth >= MaxDepth {
-		return false
-	}
 	if len(link.Text) == 0 {
 		return false
 	}
