@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"web-crawler/handler"
 )
 
@@ -23,7 +25,14 @@ func main() {
 		panic("unable to read destination directory")
 	}
 
-	handler := handler.New(strings.TrimSpace(startingURL), strings.TrimSpace(destinationDir))
-	handler.WebCrawler()
+	interruptHandler := make(chan os.Signal, 1)
+	signal.Notify(interruptHandler, syscall.SIGTERM, syscall.SIGINT)
 
+	handler := handler.New(strings.TrimSpace(startingURL), strings.TrimSpace(destinationDir))
+	go func() {
+		handler.WebCrawler()
+	}()
+
+	<-interruptHandler
+	fmt.Println("\nApplication terminated ...")
 }

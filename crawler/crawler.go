@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"strings"
 	"web-crawler/model"
 
@@ -14,17 +15,20 @@ import (
 const MaxDepth = 3
 
 type Crawler interface {
+	SetInitialUrl(url string) *crawler
 	ReadLink(body io.Reader) []model.Link
 	FilterLinks([]model.Link) []model.Link
 }
 
-type crawler struct{}
+type crawler struct {
+	initialURL string
+}
 
 func New() Crawler {
 	return &crawler{}
 }
 
-func (c crawler) makeLink(tag html.Token, text string) model.Link {
+func (c *crawler) makeLink(tag html.Token, text string) model.Link {
 	link := model.Link{
 		Text: strings.TrimSpace(text),
 	}
@@ -39,7 +43,12 @@ func (c crawler) makeLink(tag html.Token, text string) model.Link {
 	return link
 }
 
-func (c crawler) Valid(link model.Link) bool {
+func (c *crawler) SetInitialUrl(url string) *crawler {
+	c.initialURL = url
+	return c
+}
+
+func (c *crawler) Valid(link model.Link) bool {
 	if len(link.Text) == 0 {
 		return false
 	}
@@ -48,12 +57,27 @@ func (c crawler) Valid(link model.Link) bool {
 		return false
 	}
 
-	// Todo: check against initial url
-	return true
+	if _, err := url.Parse(link.Url); err != nil {
+		return false
+	}
 
+	// if !strings.HasPrefix(link.Url, "http://") || !strings.HasPrefix(link.Url, "https://") {
+	// 	return false
+	// }
+
+	// initial_url, err := url.Parse(c.initialURL)
+	// if err != nil {
+	// 	return false
+	// }
+
+	// if !strings.HasPrefix(link_url.Host, initial_url.Host) {
+	// 	return false
+	// }
+
+	return true
 }
 
-func (c crawler) ReadLink(body io.Reader) []model.Link {
+func (c *crawler) ReadLink(body io.Reader) []model.Link {
 	page := html.NewTokenizer(body)
 	links := []model.Link{}
 
@@ -91,7 +115,7 @@ func (c crawler) ReadLink(body io.Reader) []model.Link {
 	return links
 }
 
-func (c crawler) FilterLinks(links []model.Link) []model.Link {
+func (c *crawler) FilterLinks(links []model.Link) []model.Link {
 	filteredLinks := []model.Link{}
 	for _, link := range links {
 		if c.Valid(link) {

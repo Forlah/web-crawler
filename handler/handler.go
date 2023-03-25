@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sync"
 	"web-crawler/crawler"
 	"web-crawler/downloader"
 )
@@ -32,12 +33,19 @@ func (h *Handler) startCrawling(url string, depth int) {
 	}
 
 	links := h.crawler.ReadLink(resp.Body)
-	log.Println("Links = ", len(links))
 	validLinks := h.crawler.FilterLinks(links)
-	log.Println("Valid links ", len(validLinks))
+	fmt.Println("Valid links count ", len(validLinks))
 	for _, validLink := range validLinks {
 		if depth+1 < crawler.MaxDepth {
-			h.startCrawling(validLink.Url, depth+1)
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				h.startCrawling(validLink.Url, depth+1)
+			}()
+
+			// Wait for function to be executed
+			wg.Wait()
 		}
 	}
 
@@ -60,6 +68,7 @@ func (h *Handler) WebCrawler() {
 		return
 	}
 
+	h.crawler.SetInitialUrl(h.initialURL)
 	// recursively crawl webpage
 	h.startCrawling(h.initialURL, 0)
 }
