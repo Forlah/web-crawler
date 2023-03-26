@@ -7,6 +7,7 @@ import (
 	"os"
 )
 
+//go:generate mockgen -source=downloader.go -destination=../mocks/downloader_mock.go -package=mocks
 type DownloaderClient interface {
 	DownloadURL(url string) (*http.Response, error)
 	WriteContent(filepath string, data []byte) error

@@ -14,21 +14,22 @@ import (
 
 const MaxDepth = 3
 
+//go:generate mockgen -source=crawler.go -destination=../mocks/crawler_mock.go -package=mocks
 type Crawler interface {
-	SetInitialUrl(url string) *crawler
+	SetInitialUrl(url string) *CrawlerHelper
 	ReadLink(body io.Reader) []model.Link
 	FilterLinks([]model.Link) []model.Link
 }
 
-type crawler struct {
+type CrawlerHelper struct {
 	initialURL string
 }
 
 func New() Crawler {
-	return &crawler{}
+	return &CrawlerHelper{}
 }
 
-func (c *crawler) makeLink(tag html.Token, text string) model.Link {
+func (c *CrawlerHelper) makeLink(tag html.Token, text string) model.Link {
 	link := model.Link{
 		Text: strings.TrimSpace(text),
 	}
@@ -43,12 +44,12 @@ func (c *crawler) makeLink(tag html.Token, text string) model.Link {
 	return link
 }
 
-func (c *crawler) SetInitialUrl(url string) *crawler {
+func (c *CrawlerHelper) SetInitialUrl(url string) *CrawlerHelper {
 	c.initialURL = url
 	return c
 }
 
-func (c *crawler) Valid(link model.Link) bool {
+func (c *CrawlerHelper) Valid(link model.Link) bool {
 	if len(link.Text) == 0 {
 		return false
 	}
@@ -77,7 +78,7 @@ func (c *crawler) Valid(link model.Link) bool {
 	return true
 }
 
-func (c *crawler) ReadLink(body io.Reader) []model.Link {
+func (c *CrawlerHelper) ReadLink(body io.Reader) []model.Link {
 	page := html.NewTokenizer(body)
 	links := []model.Link{}
 
@@ -115,7 +116,7 @@ func (c *crawler) ReadLink(body io.Reader) []model.Link {
 	return links
 }
 
-func (c *crawler) FilterLinks(links []model.Link) []model.Link {
+func (c *CrawlerHelper) FilterLinks(links []model.Link) []model.Link {
 	filteredLinks := []model.Link{}
 	for _, link := range links {
 		if c.Valid(link) {
